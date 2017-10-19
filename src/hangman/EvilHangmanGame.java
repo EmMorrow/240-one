@@ -12,44 +12,24 @@ import java.util.Set;
 import java.util.TreeMap;
 
 public class EvilHangmanGame implements IEvilHangmanGame {
-	private HashSet<String> myWords = new HashSet<String>();
+	private Set<String> words = new HashSet<String>();
 	private ArrayList<String> guesses = new ArrayList<String>();
-	private Map<String,HashSet<String>> partitions = new TreeMap<String,HashSet<String>> ();
-	private String currentWord = null;
+	private Map<String,HashSet<String>> partitions = new TreeMap<String,HashSet<String>>();
+	private String currentWord = "";
 	private int letters = 0; 
 
 	public void startGame(File dictionary, int wordLength)  {
-		myWords.clear();
-		guesses.clear();
-		partitions.clear();
-		
+		for (int i = 0; i < wordLength; i++) currentWord += "-";
 		try {
-			FileReader fr = new FileReader(dictionary);
-			Scanner scan = new Scanner(fr);
-			scan.useDelimiter("((#[^\\n]*\\n)|(\\s+))+");
-			
-			// Fill the currentWord with '-' characters
-			for (int i = 0; i < wordLength; i++) {
-				if (i == 0) currentWord = "-";
-				else currentWord += "-";
-			}
-			
-			if (dictionary.length() == 0) {
-				System.out.println("The file is empty");
-				System.exit(1);
-			}
-			// Keep all of the words of the correct length 
+			Scanner scan = new Scanner(dictionary);
 			while (scan.hasNext()) {
 				String word = scan.next();
-				if (word.length() == wordLength) myWords.add(word);
+				if (word.length() == wordLength) words.add(word);
 			}
-			scan.close();
 			
-			if (myWords.size() == 0) {
-				System.out.println("This game can't run because there aren't enough words"); 
-				System.exit(1);
-			}
-		} catch (FileNotFoundException e) {
+			scan.close();
+		} 
+		catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
@@ -63,8 +43,15 @@ public class EvilHangmanGame implements IEvilHangmanGame {
 			throw new GuessAlreadyMadeException();
 		}
 		
+		partitionWords(guess);
+		words = findLargestPartition(guess);
+		
+		return words;
+	}
+	
+	public void partitionWords(char guess) {
 		// Partition words based on the letter guessed
-		for (String word : myWords) {
+		for (String word : words) {
 			String pattern = generatePattern(word,guess);
 			if (partitions.containsKey(pattern)) {
 				addToSet(pattern,word);
@@ -75,7 +62,9 @@ public class EvilHangmanGame implements IEvilHangmanGame {
 				partitions.put(pattern, myset);
 			}
 		}
-		
+	}
+	
+	public Set<String> findLargestPartition(char guess) {
 		// Choose the biggest partition and use that set of words
 		HashSet<String> biggestSet = null;
 		
@@ -110,8 +99,7 @@ public class EvilHangmanGame implements IEvilHangmanGame {
 			}
 		}
 		currentWord = String.valueOf(currChars);
-		myWords = biggestSet;
-		return myWords;
+		return biggestSet;
 	}
 	
 	public int charCounter(String word, char guess) {
@@ -146,6 +134,7 @@ public class EvilHangmanGame implements IEvilHangmanGame {
 	}
 	
 	public ArrayList<String> getGuesses() {
+		Collections.sort(guesses);
 		return guesses;
 	}
 	
@@ -165,8 +154,8 @@ public class EvilHangmanGame implements IEvilHangmanGame {
 	
 	public String getWord() {
 		String firstElement = "";
-		if ( ! myWords.isEmpty() ) {
-		    firstElement = myWords.iterator().next();
+		if ( ! words.isEmpty() ) {
+		    firstElement = words.iterator().next();
 		}
 		return firstElement;
 	}
